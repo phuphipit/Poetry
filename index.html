@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poetry</title>
+<style>
+  :root{
+    --paper:#FBFAF6;
+    --card:#F3EEE3;
+    --ink:#232323;
+    --ink-soft:#5b564c;
+    --line:#ddd6c4;
+    --correct:#2E7D53;
+    --correct-bg:#e4f3ea;
+    --wrong:#B0432E;
+    --wrong-bg:#fbe9e5;
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+    --font-ui: 'Segoe UI', Avenir, system-ui, -apple-system, sans-serif;
+    --font-th: 'Noto Sans Thai', 'Leelawadee UI', 'Thonburi', 'Sarabun', sans-serif;
+    --p1:#8C5A2E; --p1-bg:#f5ede2;
+    --p2:#2F5D50; --p2-bg:#e9f1ee;
+    --p3:#3A4A6B; --p3-bg:#eaedf3;
+    --p4:#6B3F5E; --p4-bg:#f3ecf1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; color:var(--ink);
+    font-family:var(--font-ui); line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    background-color:var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(35,35,35,0.05) 1px, transparent 0);
+    background-size:22px 22px;
+  }
+  .wrap{max-width:880px; margin:0 auto; padding:28px 20px 80px;}
+  header.top{ text-align:center; margin-bottom:8px; }
+  header.top h1{
+    font-family:var(--font-display); font-size:2.6rem; margin:0 0 8px;
+    letter-spacing:.3px; color:var(--ink); font-weight:700;
+  }
+  header.top p{ margin:0 0 16px; color:var(--ink-soft); font-size:1rem; }
+  header.top .flourish{
+    width:120px; height:3px; margin:0 auto 6px; border-radius:3px;
+    background:linear-gradient(90deg, #8C5A2E, #2F5D50, #3A4A6B, #6B3F5E);
+  }
+
+  .overall-progress{
+    background:#fff; border:1px solid var(--line); border-radius:999px;
+    height:10px; margin:18px 0 26px; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,.05);
+  }
+  .overall-progress-fill{
+    height:100%; width:0%; border-radius:999px;
+    background:linear-gradient(90deg, #8C5A2E, #2F5D50, #3A4A6B, #6B3F5E);
+    transition:width .4s ease;
+  }
+
+  nav.tabs{
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:26px 0 8px;
+  }
+  .tab-btn{
+    display:flex; align-items:center; gap:10px;
+    border:1.5px solid var(--line); background:#fff; color:var(--ink);
+    padding:10px 16px; border-radius:999px; cursor:pointer; font-family:var(--font-ui);
+    font-size:.92rem; font-weight:600; transition:all .18s ease;
+    box-shadow:0 2px 5px rgba(35,35,35,.05);
+  }
+  .tab-btn:not(.active):hover{ border-color:#bbb; transform:translateY(-2px); box-shadow:0 5px 12px rgba(35,35,35,.09); }
+  .tab-btn .dot{ width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:.72rem; font-weight:700; flex-shrink:0; }
+  .tab-btn.active{ border-color:transparent; color:#fff; transform:translateY(-1px); box-shadow:0 6px 14px rgba(35,35,35,.14); }
+  .tab-btn .tab-progress{ font-size:.72rem; opacity:.85; font-weight:600; }
+
+  section.poem-panel{ display:none; }
+  section.poem-panel.active{ display:block; animation:fade .25s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+  .poem-card{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:38px 28px 32px; margin:22px 0 18px; text-align:center;
+    position:relative; overflow:hidden;
+    box-shadow:0 10px 26px rgba(35,35,35,.08);
+  }
+  .poem-card::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:7px;
+    background:var(--card-accent, #8C5A2E); z-index:2;
+  }
+  .poem-bg{ position:absolute; inset:0; z-index:0; }
+  .poem-bg svg{ width:100%; height:100%; }
+  .poem-content{ position:relative; z-index:1; }
+  .poem-card h2{ font-family:var(--font-display); font-size:1.6rem; margin:6px 0 4px; }
+  .poem-card .divider{ width:46px; height:2px; margin:0 auto 18px; border-radius:2px; background:var(--card-accent, #8C5A2E); opacity:.55; }
+  .poem-card .author{ font-family:var(--font-display); font-style:italic; color:var(--ink-soft); margin-bottom:18px; font-size:.98rem; }
+  .poem-card .stanza{ margin-bottom:16px; }
+  .poem-card .stanza:last-child{ margin-bottom:0; }
+  .poem-card p.line{ font-family:var(--font-display); font-size:1.08rem; margin:2px 0; white-space:pre; }
+
+  .thai-box{
+    border-radius:14px; padding:22px 24px; margin:34px 0 12px;
+    border:1px solid var(--line); border-left-width:5px; background:#fff;
+    box-shadow:0 4px 14px rgba(35,35,35,.06);
+  }
+  .thai-box .label{ font-family:var(--font-ui); font-weight:700; font-size:.82rem; letter-spacing:.03em;
+    text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px; }
+  .thai-box p{ font-family:var(--font-th); font-size:1.02rem; margin:0 0 10px; color:var(--ink); line-height:1.9; }
+
+  .score-bar{
+    background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:18px 0;
+    font-size:.9rem; position:sticky; top:8px; z-index:5; box-shadow:0 4px 12px rgba(35,35,35,.06);
+  }
+  .score-bar .score-top-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .score-bar .score-num{ font-weight:700; }
+  .score-track{ height:8px; border-radius:999px; background:#eee7d8; overflow:hidden; }
+  .score-fill{ height:100%; border-radius:999px; transition:width .35s ease; }
+  .reset-btn{
+    border:1px solid var(--line); background:var(--paper); border-radius:8px; padding:6px 12px;
+    cursor:pointer; font-family:var(--font-ui); font-size:.82rem; color:var(--ink-soft);
+  }
+  .reset-btn:hover{ background:#efe9db; }
+
+  h3.ex-title{ font-family:var(--font-ui); font-size:1.08rem; margin:34px 0 8px; color:var(--ink); font-weight:700; }
+  h3.ex-title .accent-underline{ display:block; width:38px; height:3px; border-radius:2px; margin-top:7px; }
+
+  .example-box{
+    border-radius:12px; padding:14px 18px; margin:14px 0 20px; border:1px solid var(--line);
+    border-left-width:5px; background:#fff; box-shadow:0 3px 10px rgba(35,35,35,.05);
+  }
+  .example-box .ex-label{ font-weight:700; font-size:.86rem; margin-bottom:4px; }
+  .example-box .ex-text{ font-style:italic; font-size:.92rem; color:var(--ink-soft); }
+
+  .rhyme-hint{ font-size:.85rem; color:var(--ink-soft); margin:6px 0 10px; }
+  .rhyme-table{ width:100%; border-collapse:collapse; margin:10px 0 24px; font-size:.9rem; border-radius:10px; overflow:hidden; box-shadow:0 3px 10px rgba(35,35,35,.05); }
+  .rhyme-table th, .rhyme-table td{ border:1px solid var(--line); padding:9px 10px; text-align:left; }
+  .rhyme-table th{ background:#fff; font-size:.82rem; text-transform:uppercase; letter-spacing:.02em; color:var(--ink-soft); }
+  .rhyme-input{
+    width:52px; text-align:center; border:1.5px solid var(--line); border-radius:7px;
+    padding:6px 4px; font-family:var(--font-ui); font-size:.95rem; font-weight:700; text-transform:uppercase;
+    background:#fff; color:var(--ink); transition:all .15s ease;
+  }
+  .rhyme-input:focus{ outline:none; border-color:#999; box-shadow:0 0 0 3px rgba(35,35,35,.06); }
+  .rhyme-input.correct{ background:var(--correct-bg); border-color:var(--correct); color:#1b5c39; }
+  .rhyme-input.incorrect{ background:var(--wrong-bg); border-color:var(--wrong); color:#8a3222; }
+
+  .quiz-q{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin:16px 0; box-shadow:0 3px 10px rgba(35,35,35,.05); }
+  .quiz-q .q-text{ font-size:.97rem; margin-bottom:14px; font-weight:600; }
+  .quiz-q .options{ display:flex; flex-direction:column; gap:9px; }
+  .opt-btn{
+    display:flex; align-items:center; gap:11px; text-align:left;
+    border:1.5px solid var(--line); background:var(--paper); border-radius:10px;
+    padding:10px 14px; cursor:pointer; font-family:var(--font-ui); font-size:.9rem; color:var(--ink);
+    transition:all .15s ease;
+  }
+  .opt-btn .opt-letter{
+    flex-shrink:0; width:24px; height:24px; border-radius:50%; background:#fff; border:1.5px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:700; color:var(--ink-soft);
+  }
+  .opt-btn:hover:not(.locked){ border-color:#999; background:#fff; transform:translateX(2px); box-shadow:0 3px 8px rgba(35,35,35,.06); }
+  .opt-btn.correct{ background:var(--correct-bg); border-color:var(--correct); color:#1b5c39; font-weight:600; }
+  .opt-btn.correct .opt-letter{ background:var(--correct); border-color:var(--correct); color:#fff; }
+  .opt-btn.wrong{ background:var(--wrong-bg); border-color:var(--wrong); color:#8a3222; }
+  .opt-btn.wrong .opt-letter{ background:var(--wrong); border-color:var(--wrong); color:#fff; }
+  .opt-btn.dim{ opacity:.5; }
+  .feedback-tag{ font-size:.8rem; font-weight:700; margin-left:8px; }
+  .explain-box{
+    display:none; margin-top:12px; padding:10px 14px; border-radius:9px;
+    background:#f4f2ec; border:1px solid var(--line); font-size:.87rem; color:var(--ink-soft);
+  }
+  .explain-box.show{ display:block; }
+  .explain-box b{ color:var(--ink); }
+
+  .tip-box{
+    border-radius:12px; padding:16px 20px; margin:26px 0 12px; border:1px solid #e9d9a6; background:#fdf7e6;
+    border-left-width:5px; box-shadow:0 3px 10px rgba(35,35,35,.05);
+  }
+  .tip-box .tip-title{ font-weight:700; margin-bottom:6px; font-size:.92rem; color:#7a5a0a; }
+  .tip-box ul{ margin:4px 0 0; padding-left:20px; }
+  .tip-box li{ margin-bottom:5px; font-size:.9rem; color:#5c4a1e; }
+
+  footer.notice{ text-align:center; color:var(--ink-soft); font-size:.8rem; margin-top:50px; }
+  @media (max-width:600px){
+    .poem-card{ padding:22px 16px; }
+    .poem-card p.line{ font-size:.95rem; }
+  }
+
+  .student-bar{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:18px 20px; margin:22px 0 8px;
+  }
+  .student-bar .student-title{ font-weight:700; font-size:.92rem; margin-bottom:12px; color:var(--ink); }
+  .student-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:560px){ .student-grid{ grid-template-columns:1fr; } }
+  .student-field label{ display:block; font-size:.78rem; color:var(--ink-soft); margin-bottom:4px; text-transform:uppercase; letter-spacing:.02em; }
+  .student-field input{
+    width:100%; border:1.5px solid var(--line); border-radius:8px; padding:9px 11px;
+    font-family:var(--font-ui); font-size:.94rem; background:var(--paper); color:var(--ink);
+  }
+  .student-field input:focus{ outline:none; border-color:#888; background:#fff; }
+
+  .tab-btn.handin-tab{ font-weight:700; }
+  .summary-table{ width:100%; border-collapse:collapse; margin:14px 0 20px; font-size:.92rem; }
+  .summary-table th, .summary-table td{ border:1px solid var(--line); padding:9px 12px; text-align:left; }
+  .summary-table th{ background:#fff; font-size:.8rem; text-transform:uppercase; color:var(--ink-soft); }
+  .summary-table td.num{ text-align:center; font-weight:700; }
+  .summary-total-row td{ font-weight:700; background:#f4f2ec; }
+
+  .handin-recap{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:14px 0; font-size:.92rem; }
+  .handin-recap div{ margin-bottom:4px; }
+  .handin-recap b{ color:var(--ink); }
+
+  .submit-btn{
+    border:none; color:#fff; padding:13px 26px; border-radius:10px; cursor:pointer;
+    font-family:var(--font-ui); font-size:1rem; font-weight:700; margin:14px 0 8px;
+    background:#2E7D53;
+  }
+  .submit-btn:hover{ filter:brightness(1.08); }
+  .submit-status{ font-size:.88rem; color:var(--ink-soft); margin-top:8px; min-height:1.2em; }
+  .warn-note{ font-size:.85rem; color:#8a5a00; background:#fdf7e6; border:1px solid #e9d9a6; border-radius:10px; padding:10px 14px; margin:10px 0; }
+
+  .mode-switch{ display:flex; gap:10px; justify-content:center; margin:6px 0 18px; flex-wrap:wrap; }
+  .mode-btn{
+    border:1.5px solid var(--line); background:#fff; color:var(--ink-soft); border-radius:9px;
+    padding:8px 16px; font-family:var(--font-ui); font-size:.84rem; font-weight:600; cursor:pointer;
+    transition:all .15s ease;
+  }
+  .mode-btn:hover{ border-color:#999; color:var(--ink); }
+  .mode-btn.active-mode{ background:var(--ink); border-color:var(--ink); color:#fff; }
+
+  #teacher-app{ margin-top:10px; }
+  .teacher-tabs{ display:flex; gap:8px; margin-bottom:18px; }
+  .teacher-tab-btn{
+    border:1.5px solid var(--line); background:#fff; color:var(--ink-soft); border-radius:9px;
+    padding:8px 16px; font-family:var(--font-ui); font-size:.86rem; font-weight:600; cursor:pointer;
+  }
+  .teacher-tab-btn.active{ background:var(--ink); border-color:var(--ink); color:#fff; }
+  .teacher-panel{ display:none; }
+  .teacher-panel.active{ display:block; }
+
+  .editor-poem{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px 22px; margin:0 0 22px; box-shadow:0 3px 10px rgba(35,35,35,.05); }
+  .editor-poem-title{ font-weight:700; font-size:1.05rem; margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid var(--line); }
+  .editor-section{ margin:16px 0; padding:14px 16px; background:var(--paper); border-radius:10px; border:1px solid var(--line); }
+  .editor-section-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .editor-section-head b{ font-size:.92rem; }
+  .editor-q{ background:#fff; border:1px solid var(--line); border-radius:9px; padding:12px 14px; margin:10px 0; }
+  .editor-q textarea, .editor-q input[type=text]{
+    width:100%; border:1px solid var(--line); border-radius:7px; padding:7px 9px; font-family:var(--font-ui);
+    font-size:.86rem; margin-bottom:7px; background:var(--paper); color:var(--ink);
+  }
+  .editor-q textarea{ resize:vertical; min-height:36px; }
+  .editor-opt-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .editor-opt-row input[type=text]{ margin-bottom:0; flex:1; }
+  .small-btn{
+    border:1.5px solid var(--line); background:#fff; color:var(--ink-soft); border-radius:7px;
+    padding:5px 10px; font-size:.78rem; cursor:pointer; font-family:var(--font-ui); font-weight:600;
+  }
+  .small-btn:hover{ border-color:#999; color:var(--ink); }
+  .small-btn.danger{ border-color:var(--wrong); color:var(--wrong); }
+  .small-btn.danger:hover{ background:var(--wrong); color:#fff; }
+  .small-btn.add{ border-color:var(--correct); color:var(--correct); }
+  .small-btn.add:hover{ background:var(--correct); color:#fff; }
+  .editor-rhyme-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .editor-rhyme-row input[type=text]{ margin-bottom:0; }
+  .editor-rhyme-row .ans-input{ width:50px; text-align:center; text-transform:uppercase; flex:none; }
+  .editor-thai textarea{ width:100%; min-height:120px; font-family:var(--font-th); font-size:.92rem; border:1px solid var(--line); border-radius:8px; padding:10px; background:var(--paper); }
+
+  .results-toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+  .file-input-label{
+    border:1.5px dashed var(--line); border-radius:10px; padding:22px; text-align:center;
+    color:var(--ink-soft); font-size:.9rem; cursor:pointer; display:block; background:#fff;
+  }
+  .file-input-label:hover{ border-color:#999; }
+  .results-table-wrap{ overflow-x:auto; }
+  .results-table{ width:100%; border-collapse:collapse; font-size:.86rem; margin-top:16px; }
+  .results-table th, .results-table td{ border:1px solid var(--line); padding:8px 10px; text-align:left; white-space:nowrap; }
+  .results-table th{ background:#fff; font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); }
+  .results-empty{ color:var(--ink-soft); font-size:.9rem; text-align:center; padding:30px 0; }
+
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Poetry</h1>
+    <p>Practice questions on four poems, with answers explained as you go.</p>
+    <div class="flourish"></div>
+  </header>
+
+  <!--TEACHER-ONLY-START-->
+  <div class="mode-switch">
+    <button class="mode-btn" id="mode-btn-student" onclick="setAppMode('student')">Student View</button>
+    <button class="mode-btn" id="mode-btn-teacher" onclick="setAppMode('teacher')">Teacher Dashboard</button>
+  </div>
+  <!--TEACHER-ONLY-END-->
+
+  <div id="student-app">
+    <div class="overall-progress"><div class="overall-progress-fill" id="overall-fill"></div></div>
+
+    <div class="student-bar">
+      <div class="student-title">Student Information</div>
+      <div class="student-grid">
+        <div class="student-field">
+          <label for="stu-name">Name (ชื่อ)</label>
+          <input type="text" id="stu-name" placeholder="First name">
+        </div>
+        <div class="student-field">
+          <label for="stu-lastname">Last name (นามสกุล)</label>
+          <input type="text" id="stu-lastname" placeholder="Last name">
+        </div>
+        <div class="student-field">
+          <label for="stu-no">Student No. (เลขที่)</label>
+          <input type="text" id="stu-no" placeholder="e.g. 12">
+        </div>
+        <div class="student-field">
+          <label for="stu-class">Classroom (ห้อง)</label>
+          <input type="text" id="stu-class" placeholder="e.g. M.5/2">
+        </div>
+      </div>
+    </div>
+
+    <nav class="tabs" id="tabs"></nav>
+    <div id="panels"></div>
+
+    <footer class="notice">Type a letter into each rhyme-scheme box to check it, and click any answer choice to see if it's correct — an explanation appears underneath either way.</footer>
+  </div>
+
+  <!--TEACHER-ONLY-START-->
+  <div id="teacher-app" style="display:none">
+    <div id="teacher-lock">
+      <div class="editor-poem" style="max-width:380px; margin:20px auto; text-align:center;">
+        <div style="font-weight:700; margin-bottom:10px;">Teacher Dashboard is locked</div>
+        <input type="password" id="teacher-password-input" placeholder="Enter password" style="width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 11px; font-family:var(--font-ui); font-size:.9rem; margin-bottom:10px;" onkeydown="if(event.key==='Enter') unlockTeacherDashboard()">
+        <button class="tool-btn" style="border-color:var(--ink); background:var(--ink); color:#fff; width:100%;" onclick="unlockTeacherDashboard()">Unlock</button>
+        <div id="teacher-lock-error" style="color:var(--wrong); font-size:.82rem; margin-top:8px; min-height:1.2em;"></div>
+      </div>
+    </div>
+    <div id="teacher-content" style="display:none">
+    <div class="teacher-tabs">
+      <button class="teacher-tab-btn active" id="tt-edit" onclick="setTeacherTab('edit')">Edit Questions</button>
+      <button class="teacher-tab-btn" id="tt-results" onclick="setTeacherTab('results')">Results</button>
+    </div>
+
+    <div class="teacher-panel active" id="teacher-panel-edit">
+      <div class="edit-toolbar" style="justify-content:flex-start; margin-bottom:18px; gap:12px;">
+        <button class="tool-btn" style="border-color:var(--correct); color:var(--correct);" onclick="saveEditedMasterCopy()">💾 Save my edits (keep dashboard, for you)</button>
+        <button class="tool-btn" onclick="exportStudentCopy()">Download student copy (answers/editor hidden)</button>
+      </div>
+      <div class="warn-note" style="margin-bottom:16px;">Since this is a file with no server, "saving" means downloading an updated copy. Use <b>Save my edits</b> whenever you want a checkpoint you can reopen and keep editing — use <b>Download student copy</b> only when you're ready to hand it out.</div>
+      <div id="editor-root"></div>
+    </div>
+
+    <div class="teacher-panel" id="teacher-panel-results">
+      <div class="results-toolbar">
+        <label class="file-input-label" style="flex:1;" for="results-file-input">
+          Click to add result files (.json) that students downloaded or emailed you — you can select several at once.
+        </label>
+        <input type="file" id="results-file-input" multiple accept="application/json,.json" style="display:none" onchange="handleResultFiles(this.files)">
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
+        <button class="small-btn add" onclick="document.getElementById('results-file-input').click()">Add files</button>
+        <button class="small-btn add" onclick="loadResultsFromFirebase()">☁ Load from Firebase</button>
+        <button class="small-btn" onclick="exportResultsCSV()">Export as CSV</button>
+        <button class="small-btn danger" onclick="clearResults()">Clear all results</button>
+      </div>
+      <div id="results-submitted-by"></div>
+      <div id="results-table-root"></div>
+    </div>
+    </div>
+  </div>
+  <!--TEACHER-ONLY-END-->
+</div>
+
+<script>
+const TEMPLATE_HTML = document.documentElement.outerHTML;
+const POEMS = [{"id":"p1","num":1,"accent":"var(--p1)","accentHex":"#8C5A2E","bg":"var(--p1-bg)","title":"Oh, When I Was in Love with You","author":"A.E. Housman","bgSvg":"<svg viewBox=\"0 0 800 400\" xmlns=\"http://www.w3.org/2000/svg\" preserveAspectRatio=\"xMidYMid slice\">\n<g fill=\"none\" stroke=\"#8C5A2E\" stroke-width=\"3\" opacity=\"0.12\">\n<path d=\"M80,60 C80,45 65,35 50,35 C35,35 25,48 25,63 C25,85 50,105 80,125 C110,105 135,85 135,63 C135,48 125,35 110,35 C95,35 80,45 80,60 Z\"/>\n<path d=\"M650,280 C650,265 635,255 620,255 C605,255 595,268 595,283 C595,305 620,325 650,345 C680,325 705,305 705,283 C705,268 695,255 680,255 C665,255 650,265 650,280 Z\"/>\n<path d=\"M700,60 C700,50 690,43 680,43 C670,43 663,52 663,62 C663,78 680,92 700,106 C720,92 737,78 737,62 C737,52 730,43 720,43 C710,43 700,50 700,60 Z\"/>\n<path d=\"M120,320 C120,310 112,303 102,303 C92,303 85,312 85,322 C85,338 102,352 120,366 C138,352 155,338 155,322 C155,312 148,303 138,303 C128,303 120,310 120,320 Z\"/>\n</g>\n</svg>","stanzas":[["OH, when I was in love with you,","    Then I was clean and brave,","And miles around the wonder grew","    How well did I behave.","And now the fancy passes by,","    And nothing will remain,","And miles around they 'll say that I","    Am quite myself again"]],"thai":"บทกวีนี้เป็นบทเดียวไม่มีการแบ่งวรรคตอน เล่าถึงชายที่มองย้อนกลับไปตอนที่เขาตกหลุมรัก ในตอนนั้นเขารู้สึกว่าตัวเองดีขึ้น สะอาดและกล้าหาญ จนผู้คนรอบข้างต่างประหลาดใจในความประพฤติที่ดีของเขา\nแต่เมื่อความรู้สึกนั้นจางหายไป ทุกอย่างก็เปลี่ยนกลับสู่ปกติ และผู้คนก็จะพูดว่าเขากลับมาเป็นตัวของตัวเองอีกครั้ง บทกวีนี้ใช้น้ำเสียงที่แฝงไปด้วยความขบขันและการเสียดสีตัวเอง\nสัญลักษณ์สำคัญของบทกวีนี้คือ \"การตกหลุมรัก\" ซึ่งเป็นสัญลักษณ์ของช่วงเวลาที่คนเรารู้สึกดีขึ้นกว่าปกติเพียงชั่วคราว คำถามที่ทิ้งไว้ให้ผู้อ่านคือ การ \"เป็นตัวเองอีกครั้ง\" นั้นคือความโล่งใจ หรือคือการสูญเสียตัวตนที่ดีกว่าที่เคยเป็นไป","rhymeItems":[{"label":"\"...in love with you,\"","ans":"A"},{"label":"\"...clean and brave,\"","ans":"B"},{"label":"\"...the wonder grew\"","ans":"C"},{"label":"\"...did I behave.\"","ans":"B"},{"label":"\"...fancy passes by,\"","ans":"D"},{"label":"\"...will remain,\"","ans":"E"},{"label":"\"...they 'll say that I\"","ans":"D"},{"label":"\"...myself again\"","ans":"E"}],"sections":{"A":{"title":"Exercise A — Rhyme Scheme","questions":[{"q":"How many stanzas does this poem have?","opts":["1","2","4","8"],"a":0,"exp":"The poem is written as one block of 8 lines, with no stanza break."},{"q":"Look at lines 5 to 8 (\"by / remain / I / again\"). How do they rhyme?","opts":["They don't rhyme at all","Line 5 rhymes with line 7, and line 6 rhymes with line 8","Only line 6 and line 8 rhyme","All four lines end in the same word"],"a":1,"exp":"\"By\" rhymes with \"I,\" and \"remain\" rhymes with \"again\" — both pairs match, unlike the first four lines."}]},"B":{"title":"Exercise B — Sound Devices","example":{"label":"Alliteration","text":"\"When I was... with you\" repeats the \"w\" sound in \"when,\" \"was,\" and \"with.\""},"questions":[{"q":"Which pair of words do reflect assonance within the same line?","opts":["clean / brave","fancy / passes","miles / around","well / did"],"a":1,"exp":"\"Fancy\" and \"passes\" both carry the short \"a\" sound, sitting right next to each other in the same line — that's assonance. "},{"q":"Who notices how well the speaker behaves while he's in love?","opts":["The speaker himself","Nobody","His girlfriend only","People around him "],"a":3,"exp":"\"Miles around\" tells us it's people in the wider area who notice, not the speaker himself."},{"q":"In \"Am quite myself again,\" what does the word \"quite\" mean here?","opts":["A little bit","Completely","Rarely","Never"],"a":1,"exp":"Here \"quite\" means \"completely,\" not \"a little.\""}]},"C":{"title":"Exercise C — Imagery & Figurative Language","example":{"label":"Hyperbole","text":"\"And miles around the wonder grew\" exaggerates how far and how much people admired the speaker while he was in love."},"questions":[{"q":"What does \"being in love\" seem to represent for the speaker?","opts":["Being foolish","A more admirable version of himself","Being wealthy","Being in danger"],"a":1,"exp":"Being in love made the speaker \"clean and brave\" — an improved, more admired version of himself."},{"q":"\"And now the fancy passes by\" gives a feeling (his romantic fancy) the ability to walk past. Which figurative device is this?","opts":["Personification","Simile","Onomatopoeia","Hyperbole"],"a":0,"exp":"Giving a feeling or idea a human action, like \"passing by,\" is personification."},{"q":"The poem contrasts \"clean and brave\" (while in love) with just \"myself again\" (after). What does this suggest?","opts":["Love made him better for a while","Nothing really changed","He was in other people's shoe temporarily ","Love made him worse"],"a":0,"exp":"The contrast suggests love temporarily improved him, so losing it means losing that better version too."}]},"D":{"title":"Exercise D — Meaning, Theme & Mood","questions":[{"q":"Which best describes what this poem is really about?","opts":["Love makes you foolish ","Love can temporarily make you a better version of yourself.","Love always ends badly","True love never changes anything"],"a":1,"exp":"The poem's main idea is that love temporarily improves the speaker, and its ending brings him back to his ordinary self."},{"q":"What's the overall tone of this poem?","opts":["Serious and passionate","Suspenseful ","Light and self-teasing","Frightened"],"a":2,"exp":"The speaker gently teases his own past self, giving the poem a light, self-mocking tone."},{"q":"The last line says \"Am quite myself again.\" What might this mean?","opts":["He's happy to be normal again","He may feel he lost something special about himself","Both of these are possible readings","It has no real meaning"],"a":2,"exp":"The line can be read as relief, or as a quiet loss of his better, in-love self — both readings work."}]}},"tips":["This poem has no stanza breaks — a simple test question is just \"how many stanzas?\" (answer: 1).","The main idea here is gentle self-teasing: love temporarily made the speaker a better version of himself.","Notice how the ending can be read two ways — as relief, or as a small loss."]},{"id":"p2","num":2,"accent":"var(--p2)","accentHex":"#2F5D50","bg":"var(--p2-bg)","title":"Stopping by Woods on a Snowy Evening","author":"Robert Frost","bgSvg":"<svg viewBox=\"0 0 800 400\" xmlns=\"http://www.w3.org/2000/svg\" preserveAspectRatio=\"xMidYMid slice\">\n<g fill=\"none\" stroke=\"#2F5D50\" stroke-width=\"3\" opacity=\"0.13\">\n<path d=\"M100,340 L70,300 L85,300 L60,260 L78,260 L50,220 L150,220 L122,260 L140,260 L115,300 L130,300 L100,340 Z\"/>\n<rect x=\"95\" y=\"340\" width=\"10\" height=\"20\"/>\n<path d=\"M400,360 L360,305 L380,305 L348,255 L370,255 L335,205 L465,205 L430,255 L452,255 L420,305 L440,305 L400,360 Z\"/>\n<rect x=\"393\" y=\"360\" width=\"14\" height=\"24\"/>\n<path d=\"M680,340 L650,300 L665,300 L640,260 L658,260 L630,220 L730,220 L702,260 L720,260 L695,300 L710,300 L680,340 Z\"/>\n<rect x=\"675\" y=\"340\" width=\"10\" height=\"20\"/>\n</g>\n<g fill=\"#2F5D50\" opacity=\"0.10\">\n<circle cx=\"150\" cy=\"90\" r=\"4\"/><circle cx=\"230\" cy=\"140\" r=\"3\"/><circle cx=\"500\" cy=\"80\" r=\"4\"/>\n<circle cx=\"600\" cy=\"150\" r=\"3\"/><circle cx=\"330\" cy=\"60\" r=\"3\"/><circle cx=\"720\" cy=\"100\" r=\"4\"/>\n<circle cx=\"60\" cy=\"180\" r=\"3\"/><circle cx=\"470\" cy=\"180\" r=\"3\"/>\n</g>\n</svg>","stanzas":[["Whose woods these are I think I know.","His house is in the village though;","He will not see me stopping here","To watch his woods fill up with snow."],["My little horse must think it queer","To stop without a farmhouse near","Between the woods and frozen lake","The darkest evening of the year."],["He gives his harness bells a shake","To ask if there is some mistake.","The only other sound's the sweep","Of easy wind and downy flake."],["The woods are lovely, dark and deep,","But I have promises to keep,","And miles to go before I sleep,","And miles to go before I sleep."]],"thai":"บทกวีนี้เล่าถึงนักเดินทางที่หยุดม้าของเขาเพื่อชมป่าที่ปกคลุมไปด้วยหิมะในคืนที่มืดที่สุดของปี เขารู้ว่าป่านี้เป็นของใครบางคนที่อาศัยอยู่ในหมู่บ้าน แต่เจ้าของจะไม่เห็นเขาแวะพักตรงนี้\nม้าของเขารู้สึกแปลกใจที่ต้องหยุดโดยไม่มีบ้านฟาร์มอยู่ใกล้ ๆ จึงสั่นกระดิ่งที่สายรัดเหมือนถามว่ามีอะไรผิดปกติหรือไม่ เสียงเดียวที่ได้ยินคือเสียงลมพัดเบา ๆ และเกล็ดหิมะที่ตกลงมา\nป่าที่งดงาม มืด และลึกล้ำดึงดูดใจนักเดินทางอย่างมาก แต่เขาก็ยังมีพันธะสัญญาที่ต้องทำให้สำเร็จ และหนทางอีกยาวไกลก่อนที่เขาจะได้พักผ่อน\nสัญลักษณ์สำคัญในบทกวีนี้ ได้แก่ \"ป่า\" ที่หมายถึงสิ่งยั่วยวนหรือทางหนีจากภาระหน้าที่ (บางครั้งตีความไปถึงความตาย) และ \"การหลับ\" ที่ถูกย้ำสองครั้งในบรรทัดสุดท้าย ซึ่งอาจหมายถึงการพักผ่อนธรรมดา หรือความตายอันเป็นการพักผ่อนถาวรก็ได้","rhymeItems":[{"stanza":1,"label":"know","ans":"A"},{"stanza":1,"label":"though","ans":"A"},{"stanza":1,"label":"here","ans":"B"},{"stanza":1,"label":"snow","ans":"A"},{"stanza":2,"label":"queer","ans":"B"},{"stanza":2,"label":"near","ans":"B"},{"stanza":2,"label":"lake","ans":"C"},{"stanza":2,"label":"year","ans":"B"},{"stanza":3,"label":"shake","ans":"C"},{"stanza":3,"label":"mistake","ans":"C"},{"stanza":3,"label":"sweep","ans":"D"},{"stanza":3,"label":"flake","ans":"C"},{"stanza":4,"label":"deep","ans":"D"},{"stanza":4,"label":"keep","ans":"D"},{"stanza":4,"label":"sleep","ans":"D"},{"stanza":4,"label":"sleep","ans":"D"}],"sections":{"A":{"title":"Exercise A — Rhyme Scheme","questions":[{"q":"In stanzas 1 to 3, the third line does not rhyme with the rest of its own stanza. What does it do instead?","opts":["It doesn't rhyme with anything in the whole poem","It sets up the rhyme sound for the NEXT stanza","It rhymes with line 1 of the same stanza","It repeats the stanza before it, word for word"],"a":1,"exp":"Instead of rhyming inside its own stanza, line 3 introduces a new sound that becomes the rhyme for the next stanza."},{"q":"What's different about the last stanza?","opts":["Nothing changes","It rhymes with stanza 1","There's no rhyme at all","All four lines rhyme with each other, closing the pattern"],"a":3,"exp":"All four lines of the last stanza rhyme together, closing the pattern instead of continuing it."},{"q":"The poem says \"the darkest evening of the year.\" What time of year does this likely mean?","opts":["Summer","Winter","Spring","Lunar eclipse"],"a":1,"exp":"\"The darkest evening of the year\" points to the longest night, in winter."},{"q":"The speaker says the woods' owner \"will not see me stopping here.\" What does this tell us?","opts":["He owns the woods","He is lost","He's visiting a friend","He's likely stopping somewhere he's not really supposed to be"],"a":3,"exp":"His concern that the owner \"will not see me\" suggests he's pausing somewhere he's not really meant to be."}]},"B":{"title":"Exercise B — Sound Devices","example":{"label":"","text":""},"questions":[{"q":"Which line also uses alliteration?","opts":["\"And miles to go before I sleep\"","\"To watch his woods fill up with snow\"","\"Between the woods and frozen lake\"","\"To ask if there is some mistake.\""],"a":1,"exp":"\"Watch\" and \"woods\" repeat the same \"w\" sound."},{"q":"Which group of words represents assonance?","opts":["horse / harness","shake / darkest","deep / keep / sleep","village / though"],"a":2,"exp":"\"Deep,\" \"keep,\" and \"sleep\" all share the same long \"ee\" sound."},{"q":"\"The only other sound's the sweep / Of easy wind and downy flake\" mainly appeals to which sense?","opts":["Taste","Hearing","Smell","Touch only"],"a":1,"exp":"\"Sound\" and the \"sweep\" of wind both describe something you hear."},{"q":"The horse shakes its bells, seemingly checking if something's wrong. What does this show, compared to the speaker?","opts":["The horse and speaker feel exactly the same way","The horse stays alert and practical, while the speaker is lost in thought about the woods","The horse is scared of the woods","There is no real difference"],"a":1,"exp":"The horse reacts practically to the unusual stop, while the speaker is caught up in the quiet pull of the woods."}]},"C":{"title":"Exercise C — Imagery & Figurative Language","example":{"label":"Personification","text":"The horse is described as thinking it \"queer\" to stop, and asking \"if there is some mistake\" — as if the horse has human thoughts."},"questions":[{"q":"What do \"the woods\" most likely stand for?","opts":["Danger and mystery","Something tempting — beauty, rest, or even escaping responsibility","Nature","Loneliness"],"a":1,"exp":"The woods represent something appealing but risky — beauty, rest, or an escape from responsibility."},{"q":"What do \"promises to keep\" stand for?","opts":["A broken friendship","Duties and responsibilities in life","A literal promise to someone","A signed contract of delivery"],"a":1,"exp":"\"Promises to keep\" stands for the duties waiting for the speaker beyond the woods."},{"q":"\"The woods are lovely, dark and deep\" mixes a warm word (\"lovely\") with darker ones (\"dark,\" \"deep\"). Which figurative idea best fits this?","opts":["Symbolism","Simile","Metaphor","Hyperbole"],"a":0,"exp":"Using the woods to represent something larger, like temptation or rest, is symbolism."},{"q":"The poem repeats the word \"sleep\" at the very end. What might this represent, beyond just literal rest?","opts":["A short nap","Death, or one final, permanent rest","Boredom","Liberty"],"a":1,"exp":"Many readers see the repeated \"sleep\" as a gentle stand-in for death or one final, permanent rest."}]},"D":{"title":"Exercise D — Meaning, Theme & Mood","questions":[{"q":"What is this poem mainly about?","opts":["The beauty of nature","Wanting to rest or escape, but choosing to keep going because of duty","Being afraid of solitude","A journey of one man"],"a":1,"exp":"The poem centers on wanting to stay and rest, weighed against the duty to keep going."},{"q":"What is the overall mood of this poem?","opts":["Gloomy","Nostalgic","Quiet and thoughtful","tragic"],"a":2,"exp":"The quiet, snowy setting and slow pace create a calm, thoughtful mood."}]}},"tips":["This poem works on two levels at once — a traveler pausing in snow, and a bigger idea about duty versus rest.","The repeated final line (\"And miles to go before I sleep\") is one of the most quoted lines in American poetry.","Notice the tension in \"lovely, dark and deep\" — beauty and danger sit side by side."]},{"id":"p3","num":3,"accent":"var(--p3)","accentHex":"#3A4A6B","bg":"var(--p3-bg)","title":"Success is counted sweetest","author":"Emily Dickinson","bgSvg":"<svg viewBox=\"0 0 800 400\" xmlns=\"http://www.w3.org/2000/svg\" preserveAspectRatio=\"xMidYMid slice\">\n<g stroke=\"#3A4A6B\" stroke-width=\"3\" fill=\"none\" opacity=\"0.13\">\n<line x1=\"120\" y1=\"80\" x2=\"120\" y2=\"220\"/>\n<path d=\"M120,80 L175,105 L120,130 Z\" fill=\"#3A4A6B\" stroke=\"none\"/>\n<line x1=\"650\" y1=\"60\" x2=\"650\" y2=\"200\"/>\n<path d=\"M650,60 L700,82 L650,104 Z\" fill=\"#3A4A6B\" stroke=\"none\"/>\n<line x1=\"400\" y1=\"120\" x2=\"400\" y2=\"260\"/>\n<path d=\"M400,120 L450,142 L400,164 Z\" fill=\"#3A4A6B\" stroke=\"none\"/>\n<line x1=\"0\" y1=\"300\" x2=\"800\" y2=\"300\"/>\n</g>\n</svg>","stanzas":[["Success is counted sweetest","By those who ne'er succeed.","To comprehend a nectar","Requires sorest need."],["No one of the purple Host","Who took the Flag today","Can tell the definition","So clear of Victory"],["As he defeated - dying -","On whose forbidden ear","The distant strains of triumph","Burst agonized and clear."]],"thai":"บทกวีนี้กล่าวถึงความสำเร็จผ่านคำอุปมาเชิงสงคราม โดยเปรียบว่าคนที่ไม่เคยประสบความสำเร็จเลยกลับเป็นผู้ที่เข้าใจและรู้สึกถึงความหวานชื่นของความสำเร็จได้ลึกซึ้งที่สุด เพราะความต้องการที่ไม่ได้รับการเติมเต็มทำให้พวกเขาซาบซึ้งในคุณค่าของมันมากกว่าใคร\nกองทัพที่ได้รับธงแห่งชัยชนะกลับไม่สามารถอธิบายความหมายของชัยชนะได้ชัดเจนเท่ากับทหารที่พ่ายแพ้และกำลังจะตาย ผู้ซึ่งได้ยินเสียงแห่งชัยชนะจากระยะไกลแว่วมาอย่างเจ็บปวดแต่ชัดเจน\nสัญลักษณ์สำคัญในบทกวีนี้คือ \"ธง\" (Flag) ซึ่งหมายถึงชัยชนะ และ \"กองทัพสีม่วง\" (purple Host) ซึ่งหมายถึงฝ่ายที่ชนะสงคราม บทกวีนี้สะท้อนความคิดที่ลึกซึ้งว่า การขาดแคลนหรือการสูญเสียต่างหากที่ทำให้มนุษย์เข้าใจคุณค่าของสิ่งใดสิ่งหนึ่งได้อย่างแท้จริง มากกว่าการได้ครอบครองมันไว้","rhymeItems":[{"stanza":1,"label":"sweetest","ans":"A"},{"stanza":1,"label":"succeed","ans":"B"},{"stanza":1,"label":"nectar","ans":"C"},{"stanza":1,"label":"need","ans":"B"},{"stanza":2,"label":"Host","ans":"D"},{"stanza":2,"label":"today","ans":"E"},{"stanza":2,"label":"definition","ans":"F"},{"stanza":2,"label":"Victory","ans":"E"},{"stanza":3,"label":"dying","ans":"G"},{"stanza":3,"label":"ear","ans":"H"},{"stanza":3,"label":"triumph","ans":"I"},{"stanza":3,"label":"clear","ans":"H"}],"sections":{"A":{"title":"Exercise A — Rhyme Scheme","questions":[{"q":"In this poem, words like \"today\" and \"Victory\" almost rhyme, but not exactly. What is this kind of rhyme called?","opts":["Perfect rhyme","Slant (near) rhyme","No rhyme","Rhyme in the middle of a line"],"a":1,"exp":"\"Today\" and \"Victory\" sound close but don't rhyme perfectly — that's called slant, or near, rhyme.\nA slant rhyme is a type of rhyme with words that have similar, but not identical sounds."},{"q":"The word \"ne'er\" is an old way of writing which word?","opts":["Never","Eever","Rarely","Always"],"a":0,"exp":"\"Ne'er\" is an old contraction of \"never.\""},{"q":"Which stanza first mentions the \"Host\" and the \"Flag,\" starting the poem's battle comparison?","opts":["Stanza 1","Stanza 2","Stanza 3","None of them"],"a":1,"exp":"Stanza 2 is the first to mention the \"purple Host\" and the \"Flag,\" starting the battle comparison."}]},"B":{"title":"Exercise B — Sound Devices","example":{"label":"Alliteration","text":"\"Success is counted sweetest\" repeats the \"s\" sound."},"questions":[{"q":"Which phrase also uses alliteration?","opts":["\"sorest need\"","\"purple Host\"","\"defeated - dying\"","\"clear of Victory\""],"a":2,"exp":"\"Defeated\" and \"dying\" both start with the same \"d\" sound."},{"q":"Which group of words represents assonance?","opts":["sweetest / succeed / need","Host / Flag","forbidden / ear","agonized / clear"],"a":0,"exp":"\"Sweetest,\" \"succeed,\" and \"need\" all repeat the same long \"ee\" sound."},{"q":"The words \"defeated,\" \"dying,\" and \"distant\" all repeat the \"d\" sound. What effect does this create?","opts":["A light, playful sound","A heavy, sad sound that matches the dying soldier's mood","No real effect","A fast, energetic sound"],"a":1,"exp":"The repeated hard \"d\" sound gives this stanza a heavy, sad feeling that matches the soldier's mood."}]},"C":{"title":"Exercise C — Imagery & Figurative Language","example":{"label":"Extended metaphor","text":"The whole poem compares success and failure to a battle — \"the purple Host\" who \"took the Flag\" represents the victors, while the dying soldier represents those who fail."},"questions":[{"q":"The poem compares success to a \"nectar.\" What does this word choice suggest?","opts":["Something bitter and unpleasant","Something sweet and deeply wanted","Something violent","Something ordinary"],"a":1,"exp":"\"Nectar\" suggests something sweet and precious, showing how deeply success is wanted."},{"q":"The dying soldier hears \"the distant strains of triumph\" from far away. What does this suggest about who truly understands victory?","opts":["The winning side (the \"Host\") understands it best","Only a judge could understand it","No one really understands victory","The dying, defeated soldier understands and feels it most deeply, even from a distance"],"a":3,"exp":"The poem suggests the person who lost, not the winners, feels victory's meaning most deeply — even hearing it only from far away."},{"q":"\"Burst agonized and clear\" strongly appeals to how something sounds and feels emotionally. Which figurative device is this mainly?","opts":["Imagery","Simile","Onomatopoeia","Hyperbole"],"a":0,"exp":"This phrase creates a vivid sensory and emotional picture — that's imagery."},{"q":"The poem says success is valued most by people who never get it. Why is this a surprising, almost backwards idea?","opts":["It isn't surprising at all","We'd expect winners, not people who fail, to understand and value success the most","It means success doesn't matter","It means only people who fail care about success"],"a":1,"exp":"Normally we'd expect winners to understand success best — but the poem argues the opposite."}]},"D":{"title":"Exercise D — Meaning, Theme & Mood","questions":[{"q":"What is this poem mainly saying?","opts":["Success is only sweet for winners","Success means the most to people who never get to have it","War is a glorious thing","Success doesn't matter at all"],"a":1,"exp":"The poem's main idea is that success means the most to people who never achieve it."},{"q":"What is the overall mood of this poem?","opts":["Celebratory","Ironic, and a bit sorrowful","Heartbreaking","Pathetic"],"a":1,"exp":"The poem reflects quietly and ironically on loss, with a touch of sadness rather than celebration."},{"q":"The poem uses a battle to talk about success. How does this idea apply beyond just literal war?","opts":["It is about literal war. ","It is a criticism of soldiers specifically","It is about any kind of competition or achievement in life","It is a description of one specific historical battle"],"a":2,"exp":"The battle stands in for any kind of competition or achievement in life, not just literal war."}]}},"tips":["The key idea in this whole poem is a paradox — success is valued most by those who never achieve it.","The entire poem is a single extended metaphor (success = a battle). Point to this first for any figurative-language question.","Dickinson's hallmarks — dashes, slant rhyme, unusual capitalization (\"Flag,\" \"Host,\" \"Victory\") — are easy features to spot in an unfamiliar Dickinson poem."]},{"id":"p4","num":4,"accent":"var(--p4)","accentHex":"#6B3F5E","bg":"var(--p4-bg)","title":"When I Was One-and-Twenty","author":"A.E. Housman","bgSvg":"<svg viewBox=\"0 0 800 400\" xmlns=\"http://www.w3.org/2000/svg\" preserveAspectRatio=\"xMidYMid slice\">\n<g fill=\"none\" stroke=\"#6B3F5E\" stroke-width=\"3\" opacity=\"0.12\">\n<path d=\"M400,150 C400,130 380,115 360,115 C340,115 325,132 325,152 C325,182 360,210 400,240 C440,210 475,182 475,152 C475,132 460,115 440,115 C420,115 400,130 400,150 Z\"/>\n<circle cx=\"150\" cy=\"100\" r=\"26\"/>\n<circle cx=\"650\" cy=\"120\" r=\"22\"/>\n<circle cx=\"180\" cy=\"300\" r=\"20\"/>\n<circle cx=\"640\" cy=\"300\" r=\"24\"/>\n</g>\n</svg>","stanzas":[["When I was one-and-twenty","    I heard a wise man say,","\"Give crowns and pounds and guineas","    But not your heart away;","Give pearls away and rubies","    But keep your fancy free.\"","But I was one-and-twenty,","    No use to talk to me."],["When I was one-and-twenty","    I heard him say again,","\"The heart out of the bosom","    Was never given in vain;","'Tis paid with sighs a plenty","    And sold for endless rue.\"","And I am two-and-twenty,","And oh, 'tis true, 'tis true."]],"thai":"บทกวีนี้เล่าถึงชายหนุ่มที่ได้ยินคำแนะนำจากชายชราผู้มีปัญญา ในบทแรกเมื่อเขาอายุยี่สิบเอ็ดปี ชายชราเตือนว่าให้สละทรัพย์สมบัติ เช่น มงกุฎ เงินทอง ไข่มุก และทับทิม ไปได้ แต่อย่าให้หัวใจของตนไป เพราะความรักมีราคาที่ต้องจ่ายแพงกว่าทรัพย์สินใด ๆ แต่ชายหนุ่มในวัยที่มั่นใจในตัวเองกลับไม่สนใจคำเตือนนั้น\nในบทที่สอง เขาได้ยินคำเตือนซ้ำอีกครั้งว่า หัวใจที่มอบให้ใครไปนั้นไม่เคยสูญเปล่า แต่ต้องแลกมาด้วยความทุกข์และความเสียใจไม่รู้จบ สุดท้ายเมื่อเขาอายุยี่สิบสองปี เขาก็ยอมรับว่าคำเตือนนั้นเป็นความจริงทั้งหมด\nสัญลักษณ์สำคัญในบทกวีนี้คือ \"หัวใจ\" ซึ่งหมายถึงความรักและความเปราะบางทางอารมณ์ของมนุษย์ บทกวีนี้สะท้อนธีมเรื่องบทเรียนชีวิตที่มักมาถึงช้าเกินไป และการที่คนหนุ่มสาวมักไม่ฟังคำแนะนำจนกว่าจะได้ประสบกับความเจ็บปวดด้วยตนเอง","sections":{"A":{"title":"Exercise A — Stanzas","questions":[{"q":"How many stanzas does this poem have?","opts":["1","2","3","4"],"a":1,"exp":"The poem has two stanzas, each with 8 lines."},{"q":"How many lines are in each stanza?","opts":["4","6","8","10"],"a":2,"exp":"Each stanza has 8 lines."}]},"B":{"title":"Exercise B — Sound Devices","example":{"label":"Alliteration","text":"\"Give crowns and pounds and guineas\" repeats the \"g\" sound in \"Give\" and \"guineas.\""},"questions":[{"q":"Which group of words represents assonance?","opts":["crowns / pounds","keep / free","heart / away","sighs / plenty"],"a":1,"exp":"\"Keep\" and \"free\" both carry the same long \"ee\" sound."}]},"C":{"title":"Exercise C — Imagery & Figurative Language","example":{"label":"","text":""},"questions":[{"q":"What does the heart represent in this poem?","opts":["Wealth","Accepting advice","Maturity","Love, and how easily it can be hurt"],"a":1,"exp":"The heart stands for the speaker's romantic feelings and how open he is to being hurt."},{"q":"The poem lists valuable things like \"crowns,\" \"pounds,\" \"pearls,\" and \"rubies\" as things that are okay to give away — unlike the heart. Treating the heart like something that can be given, sold, or paid for, all the way through the poem, is an example of:","opts":["Metaphor","Simile","Onomatopoeia","Alliteration"],"a":0,"exp":"Comparing the heart to something valuable that can be given, sold, and paid for — all the way through the poem — is an extended metaphor."},{"q":"\"Sold for endless rue\". Which device is this?","opts":["Simile","Hyperbole ","Onomatopoeia","Alliteration"],"a":1,"exp":"\"Endless\" exaggerates just how long the sadness will last — that's hyperbole."},{"q":"\"Keep your fancy free\" uses \"fancy\" to mean:","opts":["Fancy clothing or style","Your romantic feelings","Your imagination in general","Your money"],"a":1,"exp":"To \"keep your fancy free\" means to keep your affections uncommitted, not tied down."}]},"D":{"title":"Exercise D — Meaning, Theme & Mood","questions":[{"q":"By the end of the poem, what has the speaker learned?","opts":["That money is worth more than love","That the wise man's warning was true all along","Young people should never fall in love","That love is never worth the risk"],"a":1,"exp":"the speaker brushed off the wise man's advice. A year later, his own heartbreak proves the warning right — that's the poem's real lesson."},{"q":"What is the mood of the last two lines (\"And I am two-and-twenty, / And oh, 'tis true, 'tis true\")?","opts":["Apologetic","Sorrowful","Inquisitive","Regretful"],"a":3,"exp":"\"'Tis true, 'tis true\" reads as a quiet, regretful admission, not a celebration."},{"q":"The phrase \"one-and-twenty\" opens the poem, and becomes \"two-and-twenty\" near the end. What does this small change suggest?","opts":["It's just there for rhyme","A year has passed, and the speaker's understanding has changed","The speaker is growing older","A new person is now speaking"],"a":1,"exp":"The phrase returns almost unchanged, but the year has changed — showing how much the speaker's understanding shifted in that time."},{"q":"What is ironic about how the poem ends?","opts":["The speaker becomes matured","The exact thing the wise man warned about happens to the speaker about a year later","The speaker still doesn't believe the advice","The wise man was wrong all along"],"a":1,"exp":"The speaker ends up experiencing exactly the heartbreak the wise man predicted, almost exactly a year later."}]}},"tips":["This poem repeats \"one-and-twenty\" and then shifts it to \"two-and-twenty\" — a small change that carries the whole poem's meaning.","The extended metaphor — treating the heart like something valuable that can be given, sold, or paid for — is the poem's main figurative device.","Notice the irony: the speaker becomes the very cautionary example the wise man described."]}];
+
+const tabsEl = document.getElementById('tabs');
+const panelsEl = document.getElementById('panels');
+const scores = {};
+const TEACHER_EMAIL = 'teacher@example.com'; // <-- replace with the real teacher email address
+
+// ---- Firebase (optional cloud backup for results) ----
+// Paste your real Firebase config below. Until you do, cloud saving is simply skipped
+// and everything still works via email + the downloaded results file.
+const FIREBASE_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+const RESULTS_COLLECTION = 'poetry_results';
+let firebaseReady = false;
+let db = null;
+try{
+  if(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY' && typeof firebase !== 'undefined'){
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    firebaseReady = true;
+  }
+}catch(e){ console.warn('Firebase not configured or failed to initialize:', e); }
+
+let currentTabId = 'p1';
+
+function renderAll(){
+  tabsEl.innerHTML = '';
+  panelsEl.innerHTML = '';
+  Object.keys(scores).forEach(k=> delete scores[k]);
+
+  POEMS.forEach(poem=>{
+    let totalQ = 0;
+    ['A','B','C','D'].forEach(k=> poem.sections[k] && (totalQ += poem.sections[k].questions.length));
+    scores[poem.id] = { correct:0, answered:0, total: totalQ };
+
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (poem.id===currentTabId?' active':'');
+    btn.style.background = poem.id===currentTabId ? poem.accent : '#fff';
+    btn.innerHTML = `<span class="dot" style="background:${poem.accentHex}">${poem.num}</span> Poem ${poem.num} <span class="tab-progress" id="tab-progress-${poem.id}"></span>`;
+    btn.onclick = ()=> showTab(poem.id);
+    btn.dataset.id = poem.id;
+    tabsEl.appendChild(btn);
+
+    const panel = document.createElement('section');
+    panel.className = 'poem-panel' + (poem.id===currentTabId?' active':'');
+    panel.id = 'panel-'+poem.id;
+
+    let html = '';
+    html += `<div class="poem-card" style="--card-accent:${poem.accentHex}">
+      <div class="poem-bg">${poem.bgSvg || ''}</div>
+      <div class="poem-content">
+      <h2>${poem.title}</h2>
+      <div class="author">by ${poem.author}</div>
+      <div class="divider"></div>`;
+    poem.stanzas.forEach(st=>{
+      html += `<div class="stanza">` + st.map(l=>`<p class="line">${escapeHtml(l)}</p>`).join('') + `</div>`;
+    });
+    html += `</div></div>`;
+
+    html += `<div class="score-bar" id="score-${poem.id}">
+      <div class="score-top-row">
+        <span>Score: <span class="score-num" id="score-num-${poem.id}">0 / ${totalQ}</span> correct</span>
+        <button class="reset-btn" onclick="resetPoem('${poem.id}')">Reset quiz</button>
+      </div>
+      <div class="score-track"><div class="score-fill" id="score-fill-${poem.id}" style="width:0%; background:${poem.accentHex}"></div></div>
+    </div>`;
+
+    ['A','B','C','D'].forEach(k=>{
+      const sec = poem.sections[k];
+      if(!sec) return;
+      html += `<h3 class="ex-title">${sec.title}<span class="accent-underline" style="background:${poem.accentHex}"></span></h3>`;
+
+      if(k==='A' && poem.rhymeItems){
+        const hasStanza = poem.rhymeItems.some(it=>it.stanza);
+        html += `<div class="rhyme-hint">Type a rhyme label (A, B, C…) for each line — start at A and use a new letter each time a new sound appears.</div>`;
+        html += `<table class="rhyme-table"><tr>${hasStanza?'<th>Stanza</th>':''}<th>Line ending</th><th>Your answer</th></tr>`;
+        poem.rhymeItems.forEach((it, ri)=>{
+          const iid = `rhyme-${poem.id}-${ri}`;
+          html += `<tr>${hasStanza?`<td>${it.stanza}</td>`:''}<td>${escapeHtml(it.label)}</td><td><input class="rhyme-input" id="${iid}" maxlength="1" data-ans="${it.ans}" oninput="checkRhyme(this)"></td></tr>`;
+        });
+        html += `</table>`;
+      }
+
+      if(sec.example){
+        html += `<div class="example-box"><div class="ex-label" style="color:${poem.accentHex}">Example — ${sec.example.label}</div><div class="ex-text">${sec.example.text}</div></div>`;
+      }
+
+      sec.questions.forEach((item, qi)=>{
+        const qid = `${poem.id}-${k}-${qi}`;
+        html += `<div class="quiz-q" id="q-${qid}">
+          <div class="q-text">${escapeHtml(item.q)} <span class="feedback-tag" id="tag-${qid}"></span></div>
+          <div class="options">`;
+        item.opts.forEach((opt, oi)=>{
+          html += `<button class="opt-btn" onclick="answer('${poem.id}','${qid}',${oi},${item.a},this)"><span class="opt-letter">${String.fromCharCode(97+oi)}</span> ${escapeHtml(opt)}</button>`;
+        });
+        html += `</div><div class="explain-box" id="exp-${qid}"><b>Why:</b> ${escapeHtml(item.exp)}</div></div>`;
+      });
+    });
+
+    html += `<div class="tip-box"><div class="tip-title">Focus for the test — ${poem.title}</div><ul>` +
+      poem.tips.map(t=>`<li>${escapeHtml(t)}</li>`).join('') + `</ul></div>`;
+
+    html += `<div class="thai-box"><div class="label">คำอธิบายบทกวี (ภาษาไทย)</div><p>${poem.thai.split('\n').join('</p><p>')}</p></div>`;
+
+    panel.innerHTML = html;
+    panelsEl.appendChild(panel);
+  });
+
+  // ---- Hand In tab ----
+  const handinBtn = document.createElement('button');
+  handinBtn.className = 'tab-btn handin-tab' + (currentTabId==='handin'?' active':'');
+  handinBtn.style.background = currentTabId==='handin' ? '#B0432E' : '#fff';
+  handinBtn.style.color = currentTabId==='handin' ? '#fff' : 'var(--ink)';
+  handinBtn.innerHTML = `<span class="dot" style="background:#B0432E">✓</span> Hand In`;
+  handinBtn.onclick = ()=> showTab('handin');
+  handinBtn.dataset.id = 'handin';
+  tabsEl.appendChild(handinBtn);
+
+  const handinPanel = document.createElement('section');
+  handinPanel.className = 'poem-panel' + (currentTabId==='handin'?' active':'');
+  handinPanel.id = 'panel-handin';
+  handinPanel.innerHTML = `
+    <h3 class="ex-title" style="margin-top:22px;">Review &amp; Hand In<span class="accent-underline" style="background:#B0432E"></span></h3>
+    <div class="handin-recap" id="handin-recap"></div>
+    <table class="summary-table" id="handin-summary"></table>
+    <div id="handin-warning"></div>
+    <button class="submit-btn" onclick="handInAssignment()">Hand in assignment</button>
+    <div class="submit-status" id="submit-status"></div>
+  `;
+  panelsEl.appendChild(handinPanel);
+
+  updateOverallProgress();
+  if(currentTabId==='handin') renderHandInSummary();
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showTab(id){
+  currentTabId = id;
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    if(b.dataset.id==='handin'){
+      b.classList.toggle('active', id==='handin');
+      b.style.background = id==='handin' ? '#B0432E' : '#fff';
+      b.style.color = id==='handin' ? '#fff' : 'var(--ink)';
+      return;
+    }
+    const p = POEMS.find(p=>p.id===b.dataset.id);
+    if(b.dataset.id===id){ b.classList.add('active'); b.style.background = p.accent; }
+    else { b.classList.remove('active'); b.style.background = '#fff'; }
+  });
+  document.querySelectorAll('.poem-panel').forEach(p=> p.classList.toggle('active', p.id === 'panel-'+id));
+  if(id==='handin') renderHandInSummary();
+}
+
+function getStudentInfo(){
+  return {
+    name: document.getElementById('stu-name').value.trim(),
+    lastname: document.getElementById('stu-lastname').value.trim(),
+    no: document.getElementById('stu-no').value.trim(),
+    classroom: document.getElementById('stu-class').value.trim()
+  };
+}
+
+function renderHandInSummary(){
+  const info = getStudentInfo();
+  const recap = document.getElementById('handin-recap');
+  recap.innerHTML = `
+    <div><b>Name:</b> ${escapeHtml(info.name || '—')} ${escapeHtml(info.lastname || '')}</div>
+    <div><b>Student No.:</b> ${escapeHtml(info.no || '—')}</div>
+    <div><b>Classroom:</b> ${escapeHtml(info.classroom || '—')}</div>
+  `;
+
+  let totalCorrect = 0, totalQ = 0, totalAnswered = 0;
+  let rows = '';
+  POEMS.forEach(p=>{
+    const s = scores[p.id];
+    totalCorrect += s.correct; totalQ += s.total; totalAnswered += s.answered;
+    rows += `<tr><td>${escapeHtml(p.title)}</td><td class="num">${s.answered} / ${s.total}</td><td class="num">${s.correct} / ${s.total}</td></tr>`;
+  });
+  document.getElementById('handin-summary').innerHTML = `
+    <tr><th>Poem</th><th>Answered</th><th>Correct</th></tr>
+    ${rows}
+    <tr class="summary-total-row"><td>Total</td><td class="num">${totalAnswered} / ${totalQ}</td><td class="num">${totalCorrect} / ${totalQ}</td></tr>
+  `;
+
+  const warnEl = document.getElementById('handin-warning');
+  const missingInfo = !info.name || !info.lastname || !info.no || !info.classroom;
+  const incomplete = totalAnswered < totalQ;
+  let warnings = [];
+  if(missingInfo) warnings.push('Please fill in your name, last name, student number, and classroom at the top of the page.');
+  if(incomplete) warnings.push(`You've answered ${totalAnswered} of ${totalQ} questions. You can still hand in, but check you haven't skipped anything.`);
+  warnEl.innerHTML = warnings.length ? `<div class="warn-note">⚠ ${warnings.join(' ')}</div>` : '';
+}
+
+function handInAssignment(){
+  const info = getStudentInfo();
+  if(!info.name || !info.lastname || !info.no || !info.classroom){
+    alert('Please fill in your name, last name, student number, and classroom before handing in.');
+    return;
+  }
+  let totalCorrect = 0, totalQ = 0;
+  const perPoem = {};
+  let lines = POEMS.map(p=>{
+    const s = scores[p.id];
+    totalCorrect += s.correct; totalQ += s.total;
+    perPoem[p.title] = { correct:s.correct, total:s.total, answered:s.answered };
+    return `${p.title}: ${s.correct}/${s.total} correct (${s.answered}/${s.total} answered)`;
+  });
+  const subject = encodeURIComponent(`Poetry Assignment - ${info.name} ${info.lastname} - Class ${info.classroom} No.${info.no}`);
+  const body = encodeURIComponent(
+`Student: ${info.name} ${info.lastname}
+Student No.: ${info.no}
+Classroom: ${info.classroom}
+
+Scores:
+${lines.join('\n')}
+
+Total: ${totalCorrect} / ${totalQ}`
+  );
+  window.location.href = `mailto:${TEACHER_EMAIL}?subject=${subject}&body=${body}`;
+
+  // Also download a small results file the teacher can import into the Results dashboard.
+  const resultObj = {
+    name: info.name, lastname: info.lastname, no: info.no, classroom: info.classroom,
+    timestamp: new Date().toISOString(),
+    perPoem, totalCorrect, totalQ
+  };
+  const blob = new Blob([JSON.stringify(resultObj, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `result-${info.name}-${info.lastname}.json`.replace(/\s+/g,'_');
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const statusEl = document.getElementById('submit-status');
+  statusEl.textContent = 'Your email app should now open with your results pre-filled, and a results file has been downloaded — send both to your teacher to finish handing in your work.';
+
+  if(firebaseReady){
+    db.collection(RESULTS_COLLECTION).add(resultObj)
+      .then(()=>{ statusEl.textContent += ' Your results were also saved automatically to your teacher\'s cloud backup.'; })
+      .catch(err=>{ console.warn('Could not save to Firebase:', err); });
+  }
+}
+
+function updateProgress(poemId){
+  const s = scores[poemId];
+  const pct = s.total ? Math.round((s.correct/s.total)*100) : 0;
+  const fill = document.getElementById('score-fill-'+poemId);
+  if(fill) fill.style.width = pct+'%';
+  const tabProg = document.getElementById('tab-progress-'+poemId);
+  if(tabProg) tabProg.textContent = s.answered ? `(${s.answered}/${s.total})` : '';
+  updateOverallProgress();
+}
+
+function updateOverallProgress(){
+  let totalAnswered=0, totalQ=0;
+  POEMS.forEach(p=>{ totalAnswered += scores[p.id].answered; totalQ += scores[p.id].total; });
+  const pct = totalQ ? Math.round((totalAnswered/totalQ)*100) : 0;
+  const bar = document.getElementById('overall-fill');
+  if(bar) bar.style.width = pct+'%';
+}
+
+function checkRhyme(input){
+  const val = input.value.trim().toUpperCase();
+  input.value = val;
+  input.classList.remove('correct','incorrect');
+  if(!val) return;
+  if(val === input.dataset.ans) input.classList.add('correct');
+  else input.classList.add('incorrect');
+}
+
+function answer(poemId, qid, chosen, correctIdx, btnEl){
+  const qDiv = document.getElementById('q-'+qid);
+  if(qDiv.dataset.locked === '1') return;
+  qDiv.dataset.locked = '1';
+  const buttons = qDiv.querySelectorAll('.opt-btn');
+  buttons.forEach((b,i)=>{
+    b.classList.add('locked');
+    if(i===correctIdx) b.classList.add('correct');
+    else if(i===chosen) b.classList.add('wrong');
+    else b.classList.add('dim');
+  });
+  const tag = document.getElementById('tag-'+qid);
+  const isCorrect = chosen === correctIdx;
+  tag.textContent = isCorrect ? '✓ Correct' : '✗ Incorrect';
+  tag.style.color = isCorrect ? 'var(--correct)' : 'var(--wrong)';
+  document.getElementById('exp-'+qid).classList.add('show');
+
+  scores[poemId].answered += 1;
+  if(isCorrect) scores[poemId].correct += 1;
+  document.getElementById('score-num-'+poemId).textContent = `${scores[poemId].correct} / ${scores[poemId].total}`;
+  updateProgress(poemId);
+}
+
+function resetPoem(poemId){
+  scores[poemId] = { correct:0, answered:0, total: scores[poemId].total };
+  document.getElementById('score-num-'+poemId).textContent = `0 / ${scores[poemId].total}`;
+  const panel = document.getElementById('panel-'+poemId);
+  panel.querySelectorAll('.quiz-q').forEach(qDiv=>{
+    qDiv.dataset.locked = '0';
+    qDiv.querySelectorAll('.opt-btn').forEach(b=> b.className = 'opt-btn');
+    const tag = qDiv.querySelector('.feedback-tag');
+    if(tag) tag.textContent = '';
+    const exp = qDiv.querySelector('.explain-box');
+    if(exp) exp.classList.remove('show');
+  });
+  panel.querySelectorAll('.rhyme-input').forEach(inp=>{
+    inp.value = ''; inp.classList.remove('correct','incorrect');
+  });
+  updateProgress(poemId);
+}
+
+/*TEACHER-ONLY-START*/
+// ================== Teacher Dashboard ==================
+const TEACHER_PASSWORD = 'changeme'; // <-- replace with your own password before sharing this file
+let teacherUnlocked = false;
+
+function setAppMode(mode){
+  document.getElementById('student-app').style.display = mode==='student' ? '' : 'none';
+  document.getElementById('teacher-app').style.display = mode==='teacher' ? '' : 'none';
+  document.getElementById('mode-btn-student').classList.toggle('active-mode', mode==='student');
+  document.getElementById('mode-btn-teacher').classList.toggle('active-mode', mode==='teacher');
+  if(mode==='teacher'){
+    document.getElementById('teacher-lock').style.display = teacherUnlocked ? 'none' : '';
+    document.getElementById('teacher-content').style.display = teacherUnlocked ? '' : 'none';
+    if(teacherUnlocked) renderEditor();
+    else setTimeout(()=> document.getElementById('teacher-password-input').focus(), 50);
+  }
+}
+
+function unlockTeacherDashboard(){
+  const input = document.getElementById('teacher-password-input');
+  const errEl = document.getElementById('teacher-lock-error');
+  if(input.value === TEACHER_PASSWORD){
+    teacherUnlocked = true;
+    document.getElementById('teacher-lock').style.display = 'none';
+    document.getElementById('teacher-content').style.display = '';
+    input.value = '';
+    errEl.textContent = '';
+    renderEditor();
+  } else {
+    errEl.textContent = 'Incorrect password.';
+    input.value = '';
+    input.focus();
+  }
+}
+
+function setTeacherTab(tab){
+  document.getElementById('tt-edit').classList.toggle('active', tab==='edit');
+  document.getElementById('tt-results').classList.toggle('active', tab==='results');
+  document.getElementById('teacher-panel-edit').classList.toggle('active', tab==='edit');
+  document.getElementById('teacher-panel-results').classList.toggle('active', tab==='results');
+}
+
+const SECTION_NAMES = {A:'Rhyme Scheme', B:'Sound Devices', C:'Imagery & Figurative Language', D:'Meaning, Theme & Mood'};
+
+function renderEditor(){
+  const root = document.getElementById('editor-root');
+  let html = '';
+  POEMS.forEach(poem=>{
+    html += `<div class="editor-poem">
+      <div class="editor-poem-title">${escapeHtml(poem.title)} — <span style="font-weight:400; font-style:italic;">${escapeHtml(poem.author)}</span></div>`;
+
+    if(poem.rhymeItems){
+      html += `<div class="editor-section">
+        <div class="editor-section-head"><b>Rhyme scheme lines</b>
+        <button class="small-btn add" onclick="addRhymeRow('${poem.id}')">+ Add line</button></div>`;
+      poem.rhymeItems.forEach((it, ri)=>{
+        html += `<div class="editor-rhyme-row">
+          <input type="text" value="${escapeAttr(it.label)}" oninput="updateRhymeField('${poem.id}',${ri},'label',this.value)" placeholder="Line ending text">
+          <input type="text" class="ans-input" maxlength="1" value="${escapeAttr(it.ans)}" oninput="updateRhymeField('${poem.id}',${ri},'ans',this.value)">
+          <button class="small-btn danger" onclick="removeRhymeRow('${poem.id}',${ri})">✕</button>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    ['A','B','C','D'].forEach(k=>{
+      const sec = poem.sections[k];
+      if(!sec) return;
+      html += `<div class="editor-section">
+        <div class="editor-section-head"><b>${SECTION_NAMES[k]}</b>
+          <span>
+            <button class="small-btn add" onclick="addQuestion('${poem.id}','${k}')">+ Add question</button>
+            <button class="small-btn danger" onclick="removeSection('${poem.id}','${k}')">✕ Remove whole section</button>
+          </span>
+        </div>`;
+      if(sec.example){
+        html += `<div class="editor-q" style="background:#eef7f2; border-color:#bcdfcb;">
+          <div style="font-size:.78rem; font-weight:700; margin-bottom:6px; color:#1b5c39;">Example shown to students (before the questions)</div>
+          <input type="text" value="${escapeAttr(sec.example.label)}" oninput="updateExampleField('${poem.id}','${k}','label',this.value)" placeholder="Device name, e.g. Alliteration">
+          <textarea oninput="updateExampleField('${poem.id}','${k}','text',this.value)" placeholder="Example sentence and explanation">${escapeHtml(sec.example.text)}</textarea>
+        </div>`;
+      } else {
+        html += `<div class="editor-q" style="background:#f4f2ec;">
+          <div style="font-size:.78rem; color:var(--ink-soft); margin-bottom:8px;">No worked example for this section yet.</div>
+          <button class="small-btn add" onclick="addExample('${poem.id}','${k}')">+ Add an example</button>
+        </div>`;
+      }
+      sec.questions.forEach((item, qi)=>{
+        html += `<div class="editor-q">
+          <textarea oninput="updateQuestionField('${poem.id}','${k}',${qi},'q',this.value)" placeholder="Question text">${escapeHtml(item.q)}</textarea>`;
+        item.opts.forEach((opt, oi)=>{
+          html += `<div class="editor-opt-row">
+            <input type="radio" name="correct-${poem.id}-${k}-${qi}" ${item.a===oi?'checked':''} onclick="updateQuestionField('${poem.id}','${k}',${qi},'a',${oi})">
+            <input type="text" value="${escapeAttr(opt)}" oninput="updateOptionField('${poem.id}','${k}',${qi},${oi},this.value)" placeholder="Option ${String.fromCharCode(97+oi)}">
+          </div>`;
+        });
+        html += `<textarea oninput="updateQuestionField('${poem.id}','${k}',${qi},'exp',this.value)" placeholder="Explanation shown after answering">${escapeHtml(item.exp)}</textarea>
+          <button class="small-btn danger" onclick="removeQuestion('${poem.id}','${k}',${qi})">✕ Remove this question</button>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+
+    html += `<div class="editor-section editor-thai">
+      <div class="editor-section-head"><b>Thai explanation</b></div>
+      <textarea oninput="updateThai('${poem.id}',this.value)">${escapeHtml(poem.thai)}</textarea>
+    </div>`;
+
+    html += `</div>`;
+  });
+  root.innerHTML = html;
+}
+
+function escapeAttr(s){ return escapeHtml(String(s)).replace(/"/g,'&quot;'); }
+function findPoem(id){ return POEMS.find(p=>p.id===id); }
+
+function updateQuestionField(poemId, sectionKey, qIndex, field, value){
+  findPoem(poemId).sections[sectionKey].questions[qIndex][field] = value;
+  if(field==='a') renderEditor();
+  renderAll();
+}
+function updateOptionField(poemId, sectionKey, qIndex, oIndex, value){
+  findPoem(poemId).sections[sectionKey].questions[qIndex].opts[oIndex] = value;
+  renderAll();
+}
+function updateRhymeField(poemId, index, field, value){
+  findPoem(poemId).rhymeItems[index][field] = field==='ans' ? value.toUpperCase() : value;
+  renderAll();
+}
+function updateThai(poemId, value){
+  findPoem(poemId).thai = value;
+}
+function updateExampleField(poemId, sectionKey, field, value){
+  findPoem(poemId).sections[sectionKey].example[field] = value;
+  renderAll();
+}
+function addExample(poemId, sectionKey){
+  findPoem(poemId).sections[sectionKey].example = { label:'Device name', text:'Example sentence from the poem and a short note on the effect.' };
+  renderEditor(); renderAll();
+}
+function addQuestion(poemId, sectionKey){
+  findPoem(poemId).sections[sectionKey].questions.push({ q:'New question — edit this text', opts:['Option a','Option b','Option c','Option d'], a:0, exp:'Explain the correct answer here.' });
+  renderEditor(); renderAll();
+}
+function removeQuestion(poemId, sectionKey, qIndex){
+  if(!confirm('Remove this question?')) return;
+  findPoem(poemId).sections[sectionKey].questions.splice(qIndex,1);
+  renderEditor(); renderAll();
+}
+function removeSection(poemId, sectionKey){
+  if(!confirm('Remove this entire section for this poem?')) return;
+  delete findPoem(poemId).sections[sectionKey];
+  renderEditor(); renderAll();
+}
+function addRhymeRow(poemId){
+  findPoem(poemId).rhymeItems.push({ label:'new line', ans:'A' });
+  renderEditor(); renderAll();
+}
+function removeRhymeRow(poemId, index){
+  if(!confirm('Remove this rhyme scheme line?')) return;
+  findPoem(poemId).rhymeItems.splice(index,1);
+  renderEditor(); renderAll();
+}
+
+function buildOutputWithCurrentPoems(){
+  const updatedPoemsJson = JSON.stringify(POEMS);
+  const marker = /const POEMS = \[[\s\S]*?\];\n\nconst tabsEl/;
+  let output = TEMPLATE_HTML;
+  if(marker.test(output)){
+    output = output.replace(marker, `const POEMS = ${updatedPoemsJson};\n\nconst tabsEl`);
+  } else {
+    alert('Could not prepare the export automatically. Please tell your teacher/developer this message appeared.');
+    return null;
+  }
+  return output;
+}
+
+function downloadHtml(output, filename){
+  output = '<!DOCTYPE html>\n' + output;
+  const blob = new Blob([output], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function saveEditedMasterCopy(){
+  const output = buildOutputWithCurrentPoems();
+  if(!output) return;
+  const stamp = new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+  downloadHtml(output, `Poetry_Master_${stamp}.html`);
+}
+
+function exportStudentCopy(){
+  let output = buildOutputWithCurrentPoems();
+  if(!output) return;
+  output = output.replace(/<!--TEACHER-ONLY-START-->[\s\S]*?<!--TEACHER-ONLY-END-->/g, '');
+  output = output.replace(/\/\*TEACHER-ONLY-START\*\/[\s\S]*?\/\*TEACHER-ONLY-END\*\//g, '');
+  downloadHtml(output, 'Poetry_Student_Copy.html');
+}
+
+// ---- Results dashboard ----
+let resultsList = [];
+
+function loadResultsFromFirebase(){
+  if(!firebaseReady){
+    alert('Firebase isn\'t set up in this file yet. Paste your Firebase config into the FIREBASE_CONFIG constant near the top of the script first.');
+    return;
+  }
+  db.collection(RESULTS_COLLECTION).get().then(snapshot=>{
+    resultsList = snapshot.docs.map(doc=> doc.data());
+    renderResultsTable();
+  }).catch(err=>{
+    alert('Could not load results from Firebase: ' + err.message);
+  });
+}
+
+function handleResultFiles(fileList){
+  Array.from(fileList).forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      try{
+        const data = JSON.parse(e.target.result);
+        resultsList.push(data);
+        renderResultsTable();
+      }catch(err){
+        alert(`Could not read ${file.name} — it doesn't look like a valid results file.`);
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
+function renderResultsTable(){
+  const root = document.getElementById('results-table-root');
+  const summaryEl = document.getElementById('results-submitted-by');
+  if(!resultsList.length){
+    root.innerHTML = `<div class="results-empty">No results added yet. Add the .json files students send you to see their scores here.</div>`;
+    if(summaryEl) summaryEl.innerHTML = '';
+    return;
+  }
+  if(summaryEl){
+    const names = resultsList.map(r=> `${r.name||''} ${r.lastname||''}`.trim()).filter(Boolean);
+    summaryEl.innerHTML = `<div class="warn-note" style="background:#e4f3ea; border-color:#bcdfcb; color:#1b5c39;">
+      <b>${names.length} submission${names.length===1?'':'s'} received from:</b> ${names.map(escapeHtml).join(', ')}
+    </div>`;
+  }
+  const poemTitles = POEMS.map(p=>p.title);
+  let html = `<div class="results-table-wrap"><table class="results-table"><tr>
+    <th>Name</th><th>Last name</th><th>No.</th><th>Class</th>` +
+    poemTitles.map(t=>`<th>${escapeHtml(t)}</th>`).join('') +
+    `<th>Total</th><th>%</th><th>Submitted</th></tr>`;
+  resultsList.forEach(r=>{
+    const pct = r.totalQ ? Math.round((r.totalCorrect/r.totalQ)*100) : 0;
+    html += `<tr><td>${escapeHtml(r.name||'')}</td><td>${escapeHtml(r.lastname||'')}</td><td>${escapeHtml(r.no||'')}</td><td>${escapeHtml(r.classroom||'')}</td>` +
+      poemTitles.map(t=>{
+        const p = (r.perPoem && r.perPoem[t]) ? r.perPoem[t] : null;
+        return `<td>${p ? p.correct+'/'+p.total : '—'}</td>`;
+      }).join('') +
+      `<td>${r.totalCorrect}/${r.totalQ}</td><td>${pct}%</td><td>${r.timestamp ? new Date(r.timestamp).toLocaleString() : ''}</td></tr>`;
+  });
+  html += `</table></div>`;
+  root.innerHTML = html;
+}
+
+function exportResultsCSV(){
+  if(!resultsList.length){ alert('No results to export yet.'); return; }
+  const poemTitles = POEMS.map(p=>p.title);
+  let rows = [['Name','Last name','No.','Class', ...poemTitles, 'Total', '%', 'Submitted']];
+  resultsList.forEach(r=>{
+    const pct = r.totalQ ? Math.round((r.totalCorrect/r.totalQ)*100) : 0;
+    rows.push([
+      r.name||'', r.lastname||'', r.no||'', r.classroom||'',
+      ...poemTitles.map(t=>{ const p=(r.perPoem && r.perPoem[t]); return p ? `${p.correct}/${p.total}` : ''; }),
+      `${r.totalCorrect}/${r.totalQ}`, pct+'%', r.timestamp||''
+    ]);
+  });
+  const csv = rows.map(row=> row.map(cell=> `"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'poetry_assignment_results.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function clearResults(){
+  if(!confirm('Clear all loaded results? This only clears them from this dashboard view — the files you added are untouched.')) return;
+  resultsList = [];
+  renderResultsTable();
+}
+/*TEACHER-ONLY-END*/
+
+renderAll();
+renderResultsTable();
+</script></body></html>
