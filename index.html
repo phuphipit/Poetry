@@ -212,6 +212,7 @@
     background:#2E7D53;
   }
   .submit-btn:hover{ filter:brightness(1.08); }
+  .submit-btn:disabled{ cursor:default; opacity:.85; filter:none; background:#556b5e; }
   .submit-status{ font-size:.88rem; color:var(--ink-soft); margin-top:8px; min-height:1.2em; }
   .warn-note{ font-size:.85rem; color:#8a5a00; background:#fdf7e6; border:1px solid #e9d9a6; border-radius:10px; padding:10px 14px; margin:10px 0; }
 
@@ -503,7 +504,7 @@ function renderAll(){
     <div class="handin-recap" id="handin-recap"></div>
     <table class="summary-table" id="handin-summary"></table>
     <div id="handin-warning"></div>
-    <button class="submit-btn" onclick="handInAssignment()">Hand in assignment</button>
+    <button class="submit-btn" id="handin-btn" onclick="handInAssignment()">Hand in assignment</button>
     <div class="submit-status" id="submit-status"></div>
   `;
   panelsEl.appendChild(handinPanel);
@@ -587,43 +588,35 @@ function handInAssignment(){
     perPoem[p.title] = { correct:s.correct, total:s.total, answered:s.answered };
     return `${p.title}: ${s.correct}/${s.total} correct (${s.answered}/${s.total} answered)`;
   });
-  const subject = encodeURIComponent(`Poetry Assignment - ${info.name} ${info.lastname} - Class ${info.classroom} No.${info.no}`);
-  const body = encodeURIComponent(
-`Student: ${info.name} ${info.lastname}
-Student No.: ${info.no}
-Classroom: ${info.classroom}
-
-Scores:
-${lines.join('\n')}
-
-Total: ${totalCorrect} / ${totalQ}`
-  );
-  window.location.href = `mailto:${TEACHER_EMAIL}?subject=${subject}&body=${body}`;
-
-  // Also download a small results file the teacher can import into the Results dashboard.
   const resultObj = {
     name: info.name, lastname: info.lastname, no: info.no, classroom: info.classroom,
     timestamp: new Date().toISOString(),
     perPoem, totalCorrect, totalQ
   };
-  const blob = new Blob([JSON.stringify(resultObj, null, 2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `result-${info.name}-${info.lastname}.json`.replace(/\s+/g,'_');
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 
+  const btn = document.getElementById('handin-btn');
   const statusEl = document.getElementById('submit-status');
-  statusEl.textContent = 'Your email app should now open with your results pre-filled, and a results file has been downloaded — send both to your teacher to finish handing in your work.';
 
-  if(firebaseReady){
-    db.collection(RESULTS_COLLECTION).add(resultObj)
-      .then(()=>{ statusEl.textContent += ' Your results were also saved automatically to your teacher\'s cloud backup.'; })
-      .catch(err=>{ console.warn('Could not save to Firebase:', err); });
+  if(!firebaseReady){
+    alert('Cloud saving isn\'t set up on this page yet — please tell your teacher, your results were NOT saved.');
+    return;
   }
+
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+  statusEl.textContent = '';
+
+  db.collection(RESULTS_COLLECTION).add(resultObj)
+    .then(()=>{
+      btn.textContent = 'Handed in ✓';
+      statusEl.textContent = `Handed in successfully — ${totalCorrect}/${totalQ} correct. You're done, no further action needed!`;
+    })
+    .catch(err=>{
+      console.warn('Could not save to Firebase:', err);
+      btn.disabled = false;
+      btn.textContent = 'Hand in assignment';
+      statusEl.textContent = 'Something went wrong and your results could not be saved. Please check your internet connection and try again.';
+    });
 }
 
 function updateProgress(poemId){
